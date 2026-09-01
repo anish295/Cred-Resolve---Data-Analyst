@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Data Quality Report — Collections Analytics</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#0f172a;color:#e2e8f0;padding:30px;min-height:100vh;}
+  h1{font-size:22px;font-weight:700;color:#e0e7ff;margin-bottom:4px;}
+  .subtitle{font-size:13px;color:#64748b;margin-bottom:28px;}
+  .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px;}
+  .sum-card{background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid #334155;
+    border-radius:10px;padding:16px;}
+  .sum-card .val{font-size:28px;font-weight:700;}
+  .sum-card .label{font-size:11px;color:#94a3b8;margin-top:4px;}
+  .sum-card.red .val{color:#f87171;}
+  .sum-card.yellow .val{color:#fbbf24;}
+  .sum-card.green .val{color:#34d399;}
+  .sum-card.blue .val{color:#60a5fa;}
+  .section{margin-bottom:28px;}
+  .section h2{font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+    color:#7c3aed;border-left:4px solid #7c3aed;padding-left:10px;margin-bottom:16px;}
+  .issue-card{background:#1e293b;border:1px solid #334155;border-radius:10px;
+    margin-bottom:12px;overflow:hidden;}
+  .issue-header{display:flex;justify-content:space-between;align-items:center;
+    padding:12px 16px;border-bottom:1px solid #334155;}
+  .issue-title{font-size:13px;font-weight:600;}
+  .badge{padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;}
+  .badge.fact{background:#7f1d1d;color:#fca5a5;}
+  .badge.se{background:#78350f;color:#fcd34d;}
+  .badge.corr{background:#1e3a5f;color:#93c5fd;}
+  .badge.hyp{background:#4a1d96;color:#c4b5fd;}
+  .issue-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+  .ib-section h4{font-size:10px;text-transform:uppercase;letter-spacing:.05em;
+    color:#64748b;margin-bottom:6px;}
+  .ib-section p{font-size:12px;color:#94a3b8;line-height:1.6;}
+  .ib-section .impact-val{font-size:18px;font-weight:700;color:#f87171;}
+  .ib-section .impact-green{color:#34d399;}
+  table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;}
+  th{background:#1e293b;color:#94a3b8;padding:8px 12px;text-align:left;font-weight:600;
+    font-size:10px;text-transform:uppercase;letter-spacing:.05em;}
+  td{padding:8px 12px;border-bottom:1px solid #1e293b;color:#cbd5e1;}
+  tr:nth-child(even) td{background:#172033;}
+  .ok{color:#34d399;}
+  .warn{color:#fbbf24;}
+  .err{color:#f87171;}
+</style>
+
+<style>
+/* Premium UI/UX Injection */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+body {
+    font-family: 'Outfit', 'Inter', sans-serif !important;
+    background: radial-gradient(circle at 15% 50%, #16112a, #0b0914) !important;
+    color: #f1f5f9 !important;
+}
+
+/* Glassmorphism Cards */
+.kpi, .card, .sum-card, .issue-card, .metric-card {
+    background: rgba(30, 41, 59, 0.4) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+    border-radius: 16px !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
+}
+
+.kpi:hover, .card:hover, .sum-card:hover, .issue-card:hover, .metric-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+body > * {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+.kpi-grid > *, .summary-grid > *, .grid2 > *, .grid3 > * {
+    animation: fadeIn 0.5s ease-out both;
+}
+
+.kpi-grid > *:nth-child(1) { animation-delay: 0.1s; }
+.kpi-grid > *:nth-child(2) { animation-delay: 0.2s; }
+.kpi-grid > *:nth-child(3) { animation-delay: 0.3s; }
+.kpi-grid > *:nth-child(4) { animation-delay: 0.4s; }
+.kpi-grid > *:nth-child(5) { animation-delay: 0.5s; }
+
+/* Enhanced Typography & Gradients */
+h1 {
+    background: linear-gradient(to right, #a78bfa, #38bdf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+}
+
+.header {
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255,255,255,0.05) !important;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5) !important;
+}
+
+.verdict-banner, .rec-banner {
+    background: linear-gradient(135deg, rgba(127, 29, 29, 0.8), rgba(69, 10, 10, 0.9)) !important;
+    backdrop-filter: blur(8px) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a; 
+}
+::-webkit-scrollbar-thumb {
+    background: #334155; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #475569; 
+}
+
+/* Specific text popping */
+.kpi .value, .sum-card .val {
+    background: linear-gradient(to bottom right, #ffffff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0px 2px 10px rgba(255,255,255,0.1);
+}
+
+.kpi.green .value { background: linear-gradient(to bottom right, #34d399, #059669); -webkit-background-clip: text; }
+.kpi.red .value { background: linear-gradient(to bottom right, #f87171, #dc2626); -webkit-background-clip: text; }
+.kpi.yellow .value { background: linear-gradient(to bottom right, #fcd34d, #d97706); -webkit-background-clip: text; }
+.kpi.blue .value { background: linear-gradient(to bottom right, #60a5fa, #2563eb); -webkit-background-clip: text; }
+
+/* Table styling for Architecture/Memo */
+table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+}
+th {
+    background: rgba(30, 41, 59, 0.8) !important;
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+}
+td {
+    background: rgba(15, 23, 42, 0.4) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+tr:hover td {
+    background: rgba(30, 41, 59, 0.6) !important;
+}
+
+</style>
+
+</head>
+<body>
+
+<h1>Data Quality Report — Collections Analytics</h1>
+<div class="subtitle">17 datasets &bull; 8 months (Jan–Aug 2026) &bull; 30,000 accounts &bull; 1,099 agents</div>
+
+<!-- SUMMARY -->
+<div class="summary-grid">
+  <div class="sum-card red">
+    <div class="val">4</div>
+    <div class="label">Confirmed Issues (FACT)</div>
+  </div>
+  <div class="sum-card red">
+    <div class="val">&#8377;19.16 Cr</div>
+    <div class="label">Payment over-count from dupes</div>
+  </div>
+  <div class="sum-card yellow">
+    <div class="val">~29K</div>
+    <div class="label">Agent rows collapsed (identity)</div>
+  </div>
+  <div class="sum-card green">
+    <div class="val">100%</div>
+    <div class="label">Issues detectable &amp; fixable</div>
+  </div>
+</div>
+
+<!-- ISSUES -->
+<div class="section">
+  <h2>Confirmed Issues</h2>
+
+  <!-- Issue A -->
+  <div class="issue-card">
+    <div class="issue-header">
+      <div class="issue-title">A — Duplicate Payment References</div>
+      <span class="badge fact">FACT</span>
+    </div>
+    <div class="issue-body">
+      <div class="ib-section">
+        <h4>Detection Method</h4>
+        <p>GROUP BY payment_reference, COUNT(*) &gt; 1.<br>
+        Cross-checked payment_status distribution within duplicate groups.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Business Impact</h4>
+        <div class="impact-val">&#8377;19.16 Cr</div>
+        <p>14.3% over-count in raw recovery figure.<br>
+        4,678 duplicate payment_reference values across 25,500 raw rows.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Treatment Applied</h4>
+        <p>Keep first SUCCESS per reference; else keep earliest record.<br>
+        Clean table: 20,822 rows (payment_id remains unique key).<br>
+        Audit log: 4,678 rows removed with reason tag.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issue B -->
+  <div class="issue-card">
+    <div class="issue-header">
+      <div class="issue-title">B — Agent Identity Fragmentation</div>
+      <span class="badge fact">FACT</span>
+    </div>
+    <div class="issue-body">
+      <div class="ib-section">
+        <h4>Detection Method</h4>
+        <p>GROUP BY employee_code, COUNT(DISTINCT agent_id).<br>
+        Found employees with up to N different agent_ids across vendors.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Business Impact</h4>
+        <div class="impact-val">~27×</div>
+        <p>Agent count inflated from 1,099 real employees to ~30,000 rows.<br>
+        Per-agent productivity metrics are split across IDs — rankings unreliable.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Treatment Applied</h4>
+        <p>Canonical agents table: one row per employee_code (most recent updated_at wins).<br>
+        All downstream metrics join to canonical employee_code.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issue C -->
+  <div class="issue-card">
+    <div class="issue-header">
+      <div class="issue-title">C — Disposition Code Schema Mismatch</div>
+      <span class="badge fact">FACT</span>
+    </div>
+    <div class="issue-body">
+      <div class="ib-section">
+        <h4>Detection Method</h4>
+        <p>Cross-tab of disposition_code × disposition_version.<br>
+        Found PROMISE_TO_PAY (legacy) and PTP (v1/v2) for identical event types.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Business Impact</h4>
+        <div class="impact-val">~50%</div>
+        <p>PTP rate appears to drop by ~50% in raw data when schema migrates from legacy to v1/v2.<br>
+        This is a false signal — no real change in borrower behaviour.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Treatment Applied</h4>
+        <p>PROMISE_TO_PAY &rarr; PTP (standardised).<br>
+        disposition_std column added in staging layer.<br>
+        All metric calculations use disposition_std, not raw code.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issue D -->
+  <div class="issue-card">
+    <div class="issue-header">
+      <div class="issue-title">D — Timezone Mixing in Call Records</div>
+      <span class="badge fact">FACT</span>
+    </div>
+    <div class="issue-body">
+      <div class="ib-section">
+        <h4>Detection Method</h4>
+        <p>For each call, applied correct UTC offset per timezone (UTC=0, IST=+5:30, Dubai=+4).<br>
+        Compared local-hour classification against UTC-corrected hour for DNC window (8AM–8PM).<br>
+        60,086 of 90,079 clean calls have a different hour once corrected.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Business Impact</h4>
+        <div class="impact-val">~24,967</div>
+        <p>Calls misclassified within DNC window (8AM–8PM local) — compliance checks unreliable.<br>
+        Best-time-to-call models trained on uncorrected data produce biased schedules.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Treatment Applied</h4>
+        <p>UTC offset annotated in staging (UTC=0, IST=+5.5, Dubai=+4).<br>
+        call_hour_utc_corrected added in clean layer.<br>
+        All calling-time analyses use corrected hour.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- STRONG EVIDENCE -->
+<div class="section">
+  <h2>Strong Evidence Issues</h2>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <div class="issue-title">E — Denominator Shrinkage (Survivorship Bias)</div>
+      <span class="badge se">STRONG EVIDENCE</span>
+    </div>
+    <div class="issue-body">
+      <div class="ib-section">
+        <h4>Detection Method</h4>
+        <p>Tracked ACTIVE account count month-by-month using account_status_history.<br>
+        Compared recovery rate with stable (all accounts) vs shrinking (active-only) denominator.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Business Impact</h4>
+        <div class="impact-val warn">Unknown</div>
+        <p>Recovery RATE may be overstated if closed accounts leave the denominator.<br>
+        Rate improves mechanically even with flat &#8377; collected.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Treatment Applied</h4>
+        <p>golden_account_snapshot reconstructs end-of-month active population.<br>
+        All rate metrics computed on stable denominator (outstanding_amount).<br>
+        Both rate definitions reported for comparison.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="issue-card">
+    <div class="issue-header">
+      <div class="issue-title">F — Attribution Window Errors</div>
+      <span class="badge se">STRONG EVIDENCE</span>
+    </div>
+    <div class="issue-body">
+      <div class="ib-section">
+        <h4>Detection Method</h4>
+        <p>Joined payments to calls on account_id; filtered call_at &gt; payment_at.<br>
+        Significant share of payments have calls recorded AFTER the payment event.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Business Impact</h4>
+        <div class="impact-val warn">Campaign ROI</div>
+        <p>Campaigns receive credit for payments they did not cause.<br>
+        High-performing campaigns may be receiving false attribution.</p>
+      </div>
+      <div class="ib-section">
+        <h4>Treatment Applied</h4>
+        <p>Channel conversion metric enforces: payment event_at MUST be &gt; touchpoint event_at.<br>
+        7-day attribution window with mandatory temporal ordering.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- RAW TABLE AUDIT -->
+<div class="section">
+  <h2>Raw Table Quality Summary</h2>
+  <table>
+    <tr>
+      <th>Table</th><th>Raw Rows</th><th>Full Dupes</th><th>Key Dupes</th>
+      <th>Clean Rows</th><th>Status</th>
+    </tr>
+    <tr><td>borrowers</td><td>30,600</td><td>600</td><td>—</td><td>30,000</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>accounts</td><td>30,000</td><td>0</td><td>—</td><td>30,000</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>agents</td><td>30,000</td><td>0</td><td>29,000 (agent_id)</td><td>1,099 canonical</td><td class="err">⚠ Identity issue</td></tr>
+    <tr><td>calls</td><td>91,350</td><td>1,271</td><td>—</td><td>90,079</td><td class="warn">⚠ Dupes removed</td></tr>
+    <tr><td>call_attempts</td><td>120,000</td><td>0</td><td>—</td><td>120,000</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>call_dispositions</td><td>35,000</td><td>0</td><td>—</td><td>35,000</td><td class="warn">⚠ Code mismatch</td></tr>
+    <tr><td>payments</td><td>25,500</td><td>486</td><td>4,678 (ref)</td><td>20,822</td><td class="err">⚠ Ref dupes</td></tr>
+    <tr><td>whatsapp_events</td><td>60,600</td><td>600</td><td>—</td><td>60,000</td><td class="warn">⚠ Dupes removed</td></tr>
+    <tr><td>sms_events</td><td>45,000</td><td>0</td><td>—</td><td>45,000</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>promises_to_pay</td><td>18,000</td><td>0</td><td>—</td><td>18,000</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>field_visits</td><td>25,000</td><td>0</td><td>—</td><td>25,000</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>campaigns</td><td>120</td><td>0</td><td>—</td><td>120</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>account_status_history</td><td>60,000</td><td>0</td><td>—</td><td>60,000</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>agent_sessions</td><td>15,000</td><td>0</td><td>—</td><td>15,000</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>daily_targeting</td><td>45,000</td><td>0</td><td>—</td><td>45,000</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>vendor_telephony</td><td>15</td><td>0</td><td>—</td><td>15</td><td class="ok">✓ Clean</td></tr>
+    <tr><td>complaints</td><td>8,000</td><td>0</td><td>—</td><td>8,000</td><td class="ok">✓ Clean</td></tr>
+  </table>
+</div>
+
+</body>
+</html>

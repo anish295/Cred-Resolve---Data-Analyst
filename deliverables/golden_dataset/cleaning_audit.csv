@@ -1,0 +1,5 @@
+table,issue,raw_rows,clean_rows,rows_removed,treatment
+agents,multiple_agent_ids_per_employee,30000,1099,28901,keep_latest_updated_at_per_employee_code
+payments,duplicate_payment_reference,25500,20822,4678,keep_first_SUCCESS_per_reference_else_earliest
+calls,full_row_duplicates,91350,90079,1271,drop_duplicates
+borrowers,full_row_duplicates,30600,30000,600,drop_duplicates

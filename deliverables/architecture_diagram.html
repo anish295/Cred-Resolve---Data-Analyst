@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Production Analytics Architecture</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#0a0a14;color:#e2e8f0;padding:30px;min-height:100vh;}
+  h1{text-align:center;font-size:20px;color:#e0e7ff;margin-bottom:6px;}
+  .subtitle{text-align:center;font-size:12px;color:#64748b;margin-bottom:32px;}
+  .pipeline{display:flex;align-items:flex-start;gap:0;justify-content:center;flex-wrap:nowrap;}
+  .layer{display:flex;flex-direction:column;align-items:center;min-width:130px;}
+  .layer-box{background:linear-gradient(135deg,#1e293b,#0f172a);border:1.5px solid;
+    border-radius:10px;padding:14px 10px;width:120px;text-align:center;position:relative;}
+  .layer-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+  .layer-items{font-size:9.5px;color:#94a3b8;line-height:1.6;text-align:left;padding:0 2px;}
+  .arrow{display:flex;align-items:center;padding:0 4px;margin-top:40px;}
+  .arrow svg{color:#475569;}
+  .layer-label{font-size:10px;color:#64748b;margin-top:8px;text-align:center;}
+  /* Layer colours */
+  .l0{border-color:#374151;}.l0 .layer-title{color:#9ca3af;}
+  .l1{border-color:#92400e;}.l1 .layer-title{color:#fbbf24;}
+  .l2{border-color:#065f46;}.l2 .layer-title{color:#34d399;}
+  .l3{border-color:#1e40af;}.l3 .layer-title{color:#60a5fa;}
+  .l4{border-color:#4c1d95;}.l4 .layer-title{color:#a78bfa;}
+  .l5{border-color:#be185d;}.l5 .layer-title{color:#f9a8d4;}
+  .l6{border-color:#9f1239;}.l6 .layer-title{color:#fca5a5;}
+
+  .contracts{margin:32px auto;max-width:900px;}
+  .contracts h2{font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;
+    border-left:3px solid #7c3aed;padding-left:10px;margin-bottom:16px;}
+  .contracts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .contract-card{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:14px;}
+  .contract-card h3{font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;
+    letter-spacing:.05em;margin-bottom:10px;}
+  .contract-card ul{font-size:11px;color:#94a3b8;line-height:1.8;list-style:none;padding:0;}
+  .contract-card ul li::before{content:'→ ';color:#4c1d95;}
+
+  .monitoring{margin:20px auto;max-width:900px;}
+  .monitoring h2{font-size:13px;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;
+    border-left:3px solid #06b6d4;padding-left:10px;margin-bottom:16px;}
+  .mon-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+  .mon-card{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px;}
+  .mon-card h3{font-size:10px;font-weight:700;color:#06b6d4;text-transform:uppercase;margin-bottom:8px;}
+  .mon-card ul{font-size:10px;color:#94a3b8;line-height:1.7;list-style:none;padding:0;}
+  .mon-card ul li::before{content:'• ';}
+</style>
+
+<style>
+/* Premium UI/UX Injection */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+body {
+    font-family: 'Outfit', 'Inter', sans-serif !important;
+    background: radial-gradient(circle at 15% 50%, #16112a, #0b0914) !important;
+    color: #f1f5f9 !important;
+}
+
+/* Glassmorphism Cards */
+.kpi, .card, .sum-card, .issue-card, .metric-card {
+    background: rgba(30, 41, 59, 0.4) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+    border-radius: 16px !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
+}
+
+.kpi:hover, .card:hover, .sum-card:hover, .issue-card:hover, .metric-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+body > * {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+.kpi-grid > *, .summary-grid > *, .grid2 > *, .grid3 > * {
+    animation: fadeIn 0.5s ease-out both;
+}
+
+.kpi-grid > *:nth-child(1) { animation-delay: 0.1s; }
+.kpi-grid > *:nth-child(2) { animation-delay: 0.2s; }
+.kpi-grid > *:nth-child(3) { animation-delay: 0.3s; }
+.kpi-grid > *:nth-child(4) { animation-delay: 0.4s; }
+.kpi-grid > *:nth-child(5) { animation-delay: 0.5s; }
+
+/* Enhanced Typography & Gradients */
+h1 {
+    background: linear-gradient(to right, #a78bfa, #38bdf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+}
+
+.header {
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255,255,255,0.05) !important;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5) !important;
+}
+
+.verdict-banner, .rec-banner {
+    background: linear-gradient(135deg, rgba(127, 29, 29, 0.8), rgba(69, 10, 10, 0.9)) !important;
+    backdrop-filter: blur(8px) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a; 
+}
+::-webkit-scrollbar-thumb {
+    background: #334155; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #475569; 
+}
+
+/* Specific text popping */
+.kpi .value, .sum-card .val {
+    background: linear-gradient(to bottom right, #ffffff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0px 2px 10px rgba(255,255,255,0.1);
+}
+
+.kpi.green .value { background: linear-gradient(to bottom right, #34d399, #059669); -webkit-background-clip: text; }
+.kpi.red .value { background: linear-gradient(to bottom right, #f87171, #dc2626); -webkit-background-clip: text; }
+.kpi.yellow .value { background: linear-gradient(to bottom right, #fcd34d, #d97706); -webkit-background-clip: text; }
+.kpi.blue .value { background: linear-gradient(to bottom right, #60a5fa, #2563eb); -webkit-background-clip: text; }
+
+/* Table styling for Architecture/Memo */
+table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+}
+th {
+    background: rgba(30, 41, 59, 0.8) !important;
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+}
+td {
+    background: rgba(15, 23, 42, 0.4) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+tr:hover td {
+    background: rgba(30, 41, 59, 0.6) !important;
+}
+
+</style>
+
+</head>
+<body>
+
+<h1>Production Analytics Architecture — Collections Platform</h1>
+<div class="subtitle">Raw → Staging → Clean → Golden → Feature → Metrics → Dashboard</div>
+
+<div class="pipeline">
+
+  <div class="layer">
+    <div class="layer-box l0">
+      <div class="layer-title">Raw Sources</div>
+      <div class="layer-items">
+        Dialer logs<br>
+        IVR events<br>
+        Agentic voice<br>
+        WhatsApp API<br>
+        SMS gateway<br>
+        Field app<br>
+        Payment gateway<br>
+        CRM system<br>
+        LMS / Core
+      </div>
+    </div>
+    <div class="layer-label">17 source systems</div>
+  </div>
+
+  <div class="arrow"><svg width="24" height="20" viewBox="0 0 24 20"><path d="M5 10h14M14 5l5 5-5 5" stroke="#475569" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
+
+  <div class="layer">
+    <div class="layer-box l1">
+      <div class="layer-title">Staging</div>
+      <div class="layer-items">
+        Type casting<br>
+        Null flagging<br>
+        TZ annotation<br>
+        Schema checks<br>
+        Quality tags<br>
+        Incremental load<br>
+        Watermark tracking
+      </div>
+    </div>
+    <div class="layer-label">stg_* tables</div>
+  </div>
+
+  <div class="arrow"><svg width="24" height="20" viewBox="0 0 24 20"><path d="M5 10h14M14 5l5 5-5 5" stroke="#475569" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
+
+  <div class="layer">
+    <div class="layer-box l2">
+      <div class="layer-title">Clean</div>
+      <div class="layer-items">
+        Dedup payments<br>
+        Dedup calls/WA<br>
+        Agent resolution<br>
+        Code mapping<br>
+        TZ normalisation<br>
+        Outlier removal<br>
+        Exclusion rules
+      </div>
+    </div>
+    <div class="layer-label">clean_* tables</div>
+  </div>
+
+  <div class="arrow"><svg width="24" height="20" viewBox="0 0 24 20"><path d="M5 10h14M14 5l5 5-5 5" stroke="#475569" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
+
+  <div class="layer">
+    <div class="layer-box l3">
+      <div class="layer-title">Golden</div>
+      <div class="layer-items">
+        golden_payments<br>
+        golden_calls<br>
+        golden_agents<br>
+        golden_sessions<br>
+        golden_acct_snap<br>
+        Primary keys ✓<br>
+        FK integrity ✓
+      </div>
+    </div>
+    <div class="layer-label">Source of truth</div>
+  </div>
+
+  <div class="arrow"><svg width="24" height="20" viewBox="0 0 24 20"><path d="M5 10h14M14 5l5 5-5 5" stroke="#475569" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
+
+  <div class="layer">
+    <div class="layer-box l4">
+      <div class="layer-title">Feature</div>
+      <div class="layer-items">
+        DPD buckets<br>
+        Agent tenure<br>
+        Touchpoint seq.<br>
+        Payment gap<br>
+        Attempt count<br>
+        Borrower score<br>
+        Campaign flags
+      </div>
+    </div>
+    <div class="layer-label">ML feature store</div>
+  </div>
+
+  <div class="arrow"><svg width="24" height="20" viewBox="0 0 24 20"><path d="M5 10h14M14 5l5 5-5 5" stroke="#475569" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
+
+  <div class="layer">
+    <div class="layer-box l5">
+      <div class="layer-title">Metrics</div>
+      <div class="layer-items">
+        Recovery rate<br>
+        Contact rate<br>
+        RPC rate<br>
+        PTP / kept rate<br>
+        Rec / agent-hr<br>
+        Channel conv.<br>
+        Cost per ₹
+      </div>
+    </div>
+    <div class="layer-label">metric_* views</div>
+  </div>
+
+  <div class="arrow"><svg width="24" height="20" viewBox="0 0 24 20"><path d="M5 10h14M14 5l5 5-5 5" stroke="#475569" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
+
+  <div class="layer">
+    <div class="layer-box l6">
+      <div class="layer-title">Dashboard</div>
+      <div class="layer-items">
+        CEO view<br>
+        Ops view<br>
+        Agent view<br>
+        Channel view<br>
+        Alerts<br>
+        Anomaly flags<br>
+        Self-serve SQL
+      </div>
+    </div>
+    <div class="layer-label">BI / HTML</div>
+  </div>
+
+</div>
+
+<div class="contracts">
+  <h2>Data Contracts &amp; Design Decisions</h2>
+  <div class="contracts-grid">
+    <div class="contract-card">
+      <h3>Primary Keys</h3>
+      <ul>
+        <li>golden_payments: payment_id</li>
+        <li>golden_calls: call_id</li>
+        <li>golden_agents: employee_code</li>
+        <li>golden_sessions: session_id</li>
+        <li>golden_account_snapshot: account_id + snap_month</li>
+      </ul>
+    </div>
+    <div class="contract-card">
+      <h3>Incremental Processing</h3>
+      <ul>
+        <li>Watermark: MAX(event_at) per table</li>
+        <li>New rows appended daily</li>
+        <li>Late-arriving data: 72h reprocess window</li>
+        <li>Backfill: full rerun with --backfill flag</li>
+        <li>Idempotent: INSERT OR REPLACE on PK</li>
+      </ul>
+    </div>
+    <div class="contract-card">
+      <h3>Late-Arriving Data</h3>
+      <ul>
+        <li>Payments: up to 48h delay from gateway</li>
+        <li>Field visits: up to 24h offline sync delay</li>
+        <li>WhatsApp reads: delivered async</li>
+        <li>Treatment: reprocess last 72h each run</li>
+        <li>Alert if event_at - ingested_at &gt; 48h</li>
+      </ul>
+    </div>
+    <div class="contract-card">
+      <h3>Data Quality Checks</h3>
+      <ul>
+        <li>Null rate &lt; 5% per critical column</li>
+        <li>Duplicate payment_reference = 0</li>
+        <li>event_at must be &lt; NOW() + 1h</li>
+        <li>Amount must be &gt; 0</li>
+        <li>Agent in canonical agents table</li>
+      </ul>
+    </div>
+    <div class="contract-card">
+      <h3>Metric Definitions (locked)</h3>
+      <ul>
+        <li>Recovery: SUCCESS golden payments only</li>
+        <li>Contact: ANSWERED &gt;30s / targeted</li>
+        <li>PTP: std code, excl PENDING denom</li>
+        <li>Channel conv: 7-day window, post-touch</li>
+        <li>Agent-hr: capped at 24h/session</li>
+      </ul>
+    </div>
+    <div class="contract-card">
+      <h3>Data Lineage</h3>
+      <ul>
+        <li>Every metric traces to golden table</li>
+        <li>Every golden row traces to raw source</li>
+        <li>Cleaning rules documented in SQL comments</li>
+        <li>Excluded rows logged to audit table</li>
+        <li>Schema version tracked per source</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="monitoring">
+  <h2>Monitoring &amp; Anomaly Detection</h2>
+  <div class="mon-grid">
+    <div class="mon-card">
+      <h3>Volume Checks</h3>
+      <ul>
+        <li>Daily call count ±30% vs 30d avg</li>
+        <li>Daily payment count ±20%</li>
+        <li>New accounts in targeting</li>
+        <li>Agent session hours ±25%</li>
+      </ul>
+    </div>
+    <div class="mon-card">
+      <h3>Quality Checks</h3>
+      <ul>
+        <li>Duplicate payment_ref count = 0</li>
+        <li>Null rate per critical column</li>
+        <li>Unknown disposition codes</li>
+        <li>TZ distribution shift</li>
+      </ul>
+    </div>
+    <div class="mon-card">
+      <h3>Metric Alerts</h3>
+      <ul>
+        <li>MoM recovery &lt; -20%</li>
+        <li>Contact rate &lt; 15%</li>
+        <li>PTP kept rate &lt; 25%</li>
+        <li>Raw vs golden gap &gt; 5%</li>
+      </ul>
+    </div>
+    <div class="mon-card">
+      <h3>SLA</h3>
+      <ul>
+        <li>Pipeline: runs by 6am daily</li>
+        <li>Dashboard refresh: hourly</li>
+        <li>Backfill SLA: &lt; 4h</li>
+        <li>Incident escalation: &lt; 2h</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

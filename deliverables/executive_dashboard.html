@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collections Performance Dashboard — CEO View</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;background:#0a0a14;color:#e2e8f0;min-height:100vh;padding:20px;}
+  .header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;
+    background:linear-gradient(135deg,#1e1b4b,#0f172a);border-radius:12px;margin-bottom:20px;
+    border:1px solid #312e81;}
+  .header h1{font-size:20px;font-weight:700;color:#e0e7ff;}
+  .header .subtitle{font-size:12px;color:#94a3b8;margin-top:4px;}
+  .header .badge{background:#ef4444;color:#fff;padding:4px 12px;border-radius:20px;font-size:11px;font-weight:600;}
+  .verdict-banner{background:linear-gradient(135deg,#7f1d1d,#991b1b);border:1px solid #ef4444;
+    border-radius:10px;padding:16px 24px;margin-bottom:20px;display:flex;align-items:center;gap:16px;}
+  .verdict-banner .icon{font-size:28px;}
+  .verdict-banner h2{font-size:16px;color:#fca5a5;font-weight:700;}
+  .verdict-banner p{font-size:13px;color:#fecaca;margin-top:4px;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:20px;}
+  .kpi{background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid #334155;
+    border-radius:10px;padding:16px 18px;}
+  .kpi .label{font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;}
+  .kpi .value{font-size:26px;font-weight:700;margin:6px 0 2px;}
+  .kpi .sub{font-size:11px;color:#64748b;}
+  .kpi.green .value{color:#34d399;}
+  .kpi.red .value{color:#f87171;}
+  .kpi.yellow .value{color:#fbbf24;}
+  .kpi.blue .value{color:#60a5fa;}
+  .kpi.purple .value{color:#a78bfa;}
+  .grid2{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px;}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:10px;padding:18px 20px;}
+  .card h3{font-size:13px;font-weight:600;color:#94a3b8;text-transform:uppercase;
+    letter-spacing:0.05em;margin-bottom:14px;}
+  .chart-area{height:160px;display:flex;align-items:flex-end;gap:6px;padding:0 4px;}
+  .bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+  .bar{width:100%;border-radius:4px 4px 0 0;transition:opacity .2s;position:relative;}
+  .bar:hover{opacity:0.85;}
+  .bar-label{font-size:9px;color:#64748b;white-space:nowrap;}
+  .bar-val{font-size:9px;color:#94a3b8;font-weight:600;}
+  .mom-chip{display:inline-block;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;}
+  .mom-pos{background:#065f46;color:#6ee7b7;}
+  .mom-neg{background:#7f1d1d;color:#fca5a5;}
+  .forensics-list{display:flex;flex-direction:column;gap:8px;}
+  .forensic-item{display:flex;justify-content:space-between;align-items:center;
+    padding:8px 12px;background:#0f172a;border-radius:8px;border-left:3px solid;}
+  .forensic-item.fact{border-color:#ef4444;}
+  .forensic-item.evidence{border-color:#f59e0b;}
+  .forensic-item.correlation{border-color:#60a5fa;}
+  .forensic-item .fi-left .fi-title{font-size:12px;font-weight:500;}
+  .forensic-item .fi-left .fi-sub{font-size:10px;color:#64748b;margin-top:2px;}
+  .fi-badge{font-size:9px;font-weight:700;padding:2px 8px;border-radius:10px;}
+  .fi-badge.fact{background:#7f1d1d;color:#fca5a5;}
+  .fi-badge.evidence{background:#78350f;color:#fcd34d;}
+  .fi-badge.correlation{background:#1e3a5f;color:#93c5fd;}
+  .recommendation{background:linear-gradient(135deg,#1e1b4b,#1a1040);
+    border:1px solid #4c1d95;border-radius:10px;padding:20px;}
+  .recommendation h3{color:#c4b5fd;font-size:13px;text-transform:uppercase;letter-spacing:.05em;}
+  .recommendation .rec-title{font-size:22px;font-weight:700;color:#a78bfa;margin:8px 0 4px;}
+  .recommendation .rec-sub{font-size:12px;color:#8b5cf6;}
+  .rec-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
+  .rec-m{background:#0f172a;border-radius:8px;padding:12px;text-align:center;}
+  .rec-m .rm-val{font-size:18px;font-weight:700;color:#a78bfa;}
+  .rec-m .rm-label{font-size:10px;color:#64748b;margin-top:4px;}
+  .channel-row{display:flex;justify-content:space-between;align-items:center;
+    padding:7px 0;border-bottom:1px solid #1e293b;}
+  .channel-row:last-child{border-bottom:none;}
+  .ch-name{font-size:12px;color:#e2e8f0;}
+  .ch-bar-wrap{flex:1;margin:0 12px;height:8px;background:#1e293b;border-radius:4px;overflow:hidden;}
+  .ch-bar-fill{height:100%;border-radius:4px;}
+  .ch-val{font-size:11px;color:#94a3b8;min-width:40px;text-align:right;}
+  .footer{text-align:center;font-size:11px;color:#475569;margin-top:16px;}
+  .verdict-pill{display:inline-block;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;}
+  .pill-red{background:#7f1d1d;color:#fca5a5;}
+  .pill-green{background:#064e3b;color:#6ee7b7;}
+</style>
+
+<style>
+/* Premium UI/UX Injection */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+body {
+    font-family: 'Outfit', 'Inter', sans-serif !important;
+    background: radial-gradient(circle at 15% 50%, #16112a, #0b0914) !important;
+    color: #f1f5f9 !important;
+}
+
+/* Glassmorphism Cards */
+.kpi, .card, .sum-card, .issue-card, .metric-card {
+    background: rgba(30, 41, 59, 0.4) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+    border-radius: 16px !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease !important;
+}
+
+.kpi:hover, .card:hover, .sum-card:hover, .issue-card:hover, .metric-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.5) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+body > * {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+.kpi-grid > *, .summary-grid > *, .grid2 > *, .grid3 > * {
+    animation: fadeIn 0.5s ease-out both;
+}
+
+.kpi-grid > *:nth-child(1) { animation-delay: 0.1s; }
+.kpi-grid > *:nth-child(2) { animation-delay: 0.2s; }
+.kpi-grid > *:nth-child(3) { animation-delay: 0.3s; }
+.kpi-grid > *:nth-child(4) { animation-delay: 0.4s; }
+.kpi-grid > *:nth-child(5) { animation-delay: 0.5s; }
+
+/* Enhanced Typography & Gradients */
+h1 {
+    background: linear-gradient(to right, #a78bfa, #38bdf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800 !important;
+    letter-spacing: -0.02em;
+}
+
+.header {
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255,255,255,0.05) !important;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5) !important;
+}
+
+.verdict-banner, .rec-banner {
+    background: linear-gradient(135deg, rgba(127, 29, 29, 0.8), rgba(69, 10, 10, 0.9)) !important;
+    backdrop-filter: blur(8px) !important;
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2) !important;
+    border: 1px solid rgba(239, 68, 68, 0.4) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a; 
+}
+::-webkit-scrollbar-thumb {
+    background: #334155; 
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #475569; 
+}
+
+/* Specific text popping */
+.kpi .value, .sum-card .val {
+    background: linear-gradient(to bottom right, #ffffff, #cbd5e1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0px 2px 10px rgba(255,255,255,0.1);
+}
+
+.kpi.green .value { background: linear-gradient(to bottom right, #34d399, #059669); -webkit-background-clip: text; }
+.kpi.red .value { background: linear-gradient(to bottom right, #f87171, #dc2626); -webkit-background-clip: text; }
+.kpi.yellow .value { background: linear-gradient(to bottom right, #fcd34d, #d97706); -webkit-background-clip: text; }
+.kpi.blue .value { background: linear-gradient(to bottom right, #60a5fa, #2563eb); -webkit-background-clip: text; }
+
+/* Table styling for Architecture/Memo */
+table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border-radius: 10px !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+}
+th {
+    background: rgba(30, 41, 59, 0.8) !important;
+    color: #94a3b8 !important;
+    font-weight: 600 !important;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+}
+td {
+    background: rgba(15, 23, 42, 0.4) !important;
+    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+}
+tr:hover td {
+    background: rgba(30, 41, 59, 0.6) !important;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>&#128200; Collections Performance Dashboard</h1>
+    <div class="subtitle">Golden Dataset &bull; De-duplicated &bull; 8 Months (Jan–Aug 2026) &bull; 30,000 Accounts</div>
+  </div>
+  <div style="text-align:right;">
+    <div class="badge">&#9888; CLAIM DISPUTED</div>
+    <div style="font-size:11px;color:#94a3b8;margin-top:6px;">Generated: Sep 2026</div>
+  </div>
+</div>
+
+<div class="verdict-banner">
+  <div class="icon">&#10060;</div>
+  <div>
+    <h2>The 11% Month-on-Month Improvement Claim is NOT Supported by Clean Data</h2>
+    <p>Golden dataset (de-duped) shows average MoM of <strong>&#8211;13.4%</strong> (distorted by partial Aug).
+    Full months Jan–Jul average: <strong>&#8211;2.5%</strong>. Raw data is inflated by
+    <strong>&#8377;19.16 Cr (14.3%)</strong> due to duplicate payment references.
+    Denominator shrinkage and mix-shift may explain any apparent improvement.</p>
+  </div>
+</div>
+
+<!-- KPI ROW -->
+<div class="kpi-grid">
+  <div class="kpi green">
+    <div class="label">Total Recovered (Clean)</div>
+    <div class="value">&#8377;115 Cr</div>
+    <div class="sub">Jan–Aug 2026 &bull; SUCCESS only</div>
+  </div>
+  <div class="kpi red">
+    <div class="label">Raw Inflation (Dupes)</div>
+    <div class="value">&#8377;19 Cr</div>
+    <div class="sub">14.3% over-count in raw data</div>
+  </div>
+  <div class="kpi yellow">
+    <div class="label">Call Connect Rate</div>
+    <div class="value">19.9%</div>
+    <div class="sub">Answered calls / total dials placed</div>
+  </div>
+  <div class="kpi red">
+    <div class="label">PTP Kept Rate</div>
+    <div class="value">33.0%</div>
+    <div class="sub">67% of PTPs broken/cancelled</div>
+  </div>
+  <div class="kpi purple">
+    <div class="label">Recovery / Agent-Hr</div>
+    <div class="value">&#8377;14.6K</div>
+    <div class="sub">78,871 agent-hours total</div>
+  </div>
+</div>
+
+<div class="grid2">
+  <!-- Monthly Recovery Chart -->
+  <div class="card">
+    <h3>&#128200; Monthly Recovery &#8377; Cr (Golden — de-duped SUCCESS)</h3>
+    <div class="chart-area" id="barChart">
+      <!-- bars injected by JS -->
+    </div>
+    <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;" id="momChips"></div>
+  </div>
+
+  <!-- Forensics -->
+  <div class="card">
+    <h3>&#128269; Data Quality Issues Found</h3>
+    <div class="forensics-list">
+      <div class="forensic-item fact">
+        <div class="fi-left">
+          <div class="fi-title">Duplicate payment references</div>
+          <div class="fi-sub">4,678 refs &bull; &#8377;19.16 Cr inflation</div>
+        </div>
+        <span class="fi-badge fact">FACT</span>
+      </div>
+      <div class="forensic-item fact">
+        <div class="fi-left">
+          <div class="fi-title">Agent identity fragmentation</div>
+          <div class="fi-sub">30,000 rows &rarr; 1,099 real agents</div>
+        </div>
+        <span class="fi-badge fact">FACT</span>
+      </div>
+      <div class="forensic-item fact">
+        <div class="fi-left">
+          <div class="fi-title">Disposition schema mismatch</div>
+          <div class="fi-sub">PROMISE_TO_PAY &ne; PTP in raw reports</div>
+        </div>
+        <span class="fi-badge fact">FACT</span>
+      </div>
+      <div class="forensic-item fact">
+        <div class="fi-left">
+          <div class="fi-title">Timezone mixing (3 TZs)</div>
+          <div class="fi-sub">Calling-hour analytics unreliable</div>
+        </div>
+        <span class="fi-badge fact">FACT</span>
+      </div>
+      <div class="forensic-item evidence">
+        <div class="fi-left">
+          <div class="fi-title">Denominator shrinkage</div>
+          <div class="fi-sub">Closed accounts leaving active pool</div>
+        </div>
+        <span class="fi-badge evidence">STR. EVIDENCE</span>
+      </div>
+      <div class="forensic-item correlation">
+        <div class="fi-left">
+          <div class="fi-title">Portfolio mix shift</div>
+          <div class="fi-sub">Easier accounts entering pool</div>
+        </div>
+        <span class="fi-badge correlation">CORRELATION</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="grid3">
+  <!-- Channel Conversion -->
+  <div class="card">
+    <h3>&#128222; Channel Conversion (7-day window)</h3>
+    <div style="margin-top:4px;">
+      <div class="channel-row">
+        <span class="ch-name">&#128222; Calls (connect)</span>
+        <div class="ch-bar-wrap"><div class="ch-bar-fill" style="width:100%;background:#7c3aed;"></div></div>
+        <span class="ch-val">19.9%</span>
+      </div>
+      <div class="channel-row">
+        <span class="ch-name">&#128172; WhatsApp</span>
+        <div class="ch-bar-wrap"><div class="ch-bar-fill" style="width:85%;background:#10b981;"></div></div>
+        <span class="ch-val">97.9% read</span>
+      </div>
+      <div class="channel-row">
+        <span class="ch-name">&#128241; SMS</span>
+        <div class="ch-bar-wrap"><div class="ch-bar-fill" style="width:40%;background:#f59e0b;"></div></div>
+        <span class="ch-val">low engage</span>
+      </div>
+      <div class="channel-row">
+        <span class="ch-name">&#127968; Field</span>
+        <div class="ch-bar-wrap"><div class="ch-bar-fill" style="width:50%;background:#06b6d4;"></div></div>
+        <span class="ch-val">25K visits</span>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:#64748b;">
+      &#9888; Attribution: payment must come AFTER touchpoint (post-payment calls excluded)
+    </div>
+  </div>
+
+  <!-- Portfolio Mix -->
+  <div class="card">
+    <h3>&#127970; Portfolio Mix (30K Accounts)</h3>
+    <div style="margin-top:4px;">
+      <div class="channel-row">
+        <span class="ch-name">HIGH risk</span>
+        <div class="ch-bar-wrap"><div class="ch-bar-fill" style="width:100%;background:#ef4444;"></div></div>
+        <span class="ch-val">25.2%</span>
+      </div>
+      <div class="channel-row">
+        <span class="ch-name">MEDIUM risk</span>
+        <div class="ch-bar-wrap"><div class="ch-bar-fill" style="width:99%;background:#f59e0b;"></div></div>
+        <span class="ch-val">25.1%</span>
+      </div>
+      <div class="channel-row">
+        <span class="ch-name">LOW risk</span>
+        <div class="ch-bar-wrap"><div class="ch-bar-fill" style="width:99%;background:#10b981;"></div></div>
+        <span class="ch-val">25.0%</span>
+      </div>
+      <div class="channel-row">
+        <span class="ch-name">NPA</span>
+        <div class="ch-bar-wrap"><div class="ch-bar-fill" style="width:97%;background:#7c3aed;"></div></div>
+        <span class="ch-val">24.7%</span>
+      </div>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#64748b;">
+      Avg DPD: <strong style="color:#fbbf24;">56.5 days</strong> &bull; Balanced mix, no obvious skew
+    </div>
+  </div>
+
+  <!-- Investment Recommendation -->
+  <div class="recommendation">
+    <h3>&#128176; &#8377;10 Cr Investment Decision</h3>
+    <div class="rec-title">Better Borrower Targeting</div>
+    <div class="rec-sub">&#8377;6 Cr targeting + &#8377;2 Cr WhatsApp + &#8377;2 Cr AI pilot</div>
+    <div class="rec-metrics">
+      <div class="rec-m">
+        <div class="rm-val">10%</div>
+        <div class="rm-label">Expected uplift</div>
+      </div>
+      <div class="rec-m">
+        <div class="rm-val">6 mo</div>
+        <div class="rm-label">Break-even</div>
+      </div>
+      <div class="rec-m">
+        <div class="rm-val">~600%</div>
+        <div class="rm-label">12-mo ROI</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:#8b5cf6;">
+      &#9888; Downside: 4% uplift if model underperforms &rarr; 15-month break-even<br>
+      &#128161; Validate with 6-week A/B experiment (&lt;&#8377;10L) before full deployment
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Collections Analytics Dashboard &bull; Data: 17 CSV tables, 8 months &bull; Engine: Python + DuckDB &bull;
+  Metrics: Golden Dataset (de-duped, entity-resolved) &bull; Claim: 11% MoM &mdash;
+  <span class="verdict-pill pill-red">NOT PROVEN</span>
+</div>
+
+<script>
+const monthly = [
+  ["Jan","18.07",null],["Feb","15.94",-11.8],["Mar","17.19",7.8],
+  ["Apr","15.39",-10.5],["May","15.43",0.3],["Jun","14.54",-5.8],
+  ["Jul","14.70",1.1],["Aug*","3.72",-74.7]
+];
+const maxVal = Math.max(...monthly.map(m=>parseFloat(m[1])));
+const chart = document.getElementById('barChart');
+const chips = document.getElementById('momChips');
+monthly.forEach(([m,v,mom])=>{
+  const pct = parseFloat(v)/maxVal*100;
+  const color = mom===null?'#7c3aed':mom>=0?'#10b981':'#ef4444';
+  const wrap = document.createElement('div');
+  wrap.className='bar-wrap';
+  wrap.innerHTML = `<div class="bar-val">&#8377;${v}Cr</div>
+    <div class="bar" style="height:${pct}%;background:${color};min-height:8px;" title="${m}: ₹${v}Cr"></div>
+    <div class="bar-label">${m}</div>`;
+  chart.appendChild(wrap);
+  if(mom!==null){
+    const chip=document.createElement('span');
+    chip.className='mom-chip '+(mom>=0?'mom-pos':'mom-neg');
+    chip.textContent=(mom>=0?'+':'')+mom+'% '+m;
+    chips.appendChild(chip);
+  }
+});
+</script>
+</body>
+</html>
