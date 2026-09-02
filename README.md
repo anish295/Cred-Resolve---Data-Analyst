@@ -1,5 +1,11 @@
 # Collections Analytics — Data Analyst Assignment
 
+## Links to Dashboards
+- ** Executive memo ** : https://executive-memo-credresolve.netlify.app/
+- ** Architecture Diagram ** : https://architecture-diagram-credresolve.netlify.app/
+- ** Data Quality Report ** : https://data-quality-report-credresolve.netlify.app/
+- ** Executive Dashboard ** : https://dashboard-credresolve.netlify.app/
+
 > **Objective:** Determine whether the business claim — *"Recovery has improved by 11% month-on-month"* — is actually true when the underlying data is messy, incomplete, contradictory, and potentially misleading.
 
 ---
